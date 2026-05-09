@@ -1,13 +1,13 @@
 # StockWise Privacy Policy
 
 **Effective date:** 2026-05-08
-**Last updated:** 2026-05-08
+**Last updated:** 2026-05-09
 
 StockWise ("we", "us", "the app") is an offline-first grocery and pantry planning app for iOS and Android. This policy explains what data the app handles, where it lives, and the choices you have. We've tried to keep it short and free of legalese — if anything is unclear, open an issue at https://github.com/amoghsa/Stockwise/issues.
 
 ## Summary, in one paragraph
 
-Your shopping data — items, lists, pantry stock, events, purchase history, household size — stays on your device. We do not run a backend that stores it, and we do not sync it to the cloud. The app uses Google Firebase (Analytics, Crashlytics, Performance Monitoring) to understand how the app is used and to find crashes, and Google AdMob to show ads in the free tier. Analytics is opt-out: a single toggle in Settings → Data & Privacy turns it off. You can wipe everything the app stored, on device and in analytics, with **Delete All Data** in Settings.
+Your shopping data — items, lists, pantry stock, events, purchase history, prices and budgets, household size — stays on your device. We do not run a backend that stores it, and we do not sync it to the cloud. The app uses Google Firebase (Analytics, Crashlytics, Performance Monitoring) to understand how the app is used and to find crashes, and Google AdMob to show ads in the free tier. **Analytics is off by default** — nothing is sent to Firebase until you flip the toggle in Settings → Data & Privacy → Help Improve StockWise. While that toggle is off, AdMob ads are also fully suppressed, so the free tier behaves like a fully offline build until you opt in. You can wipe everything the app stored, on device and in analytics, with **Delete All Data** in Settings.
 
 ## What stays only on your device
 
@@ -16,10 +16,13 @@ The following is stored locally (Apple SwiftData on iOS, Room on Android) and ne
 - Grocery items, categories, and the lists you build
 - Pantry inventory state (in stock / running low / out)
 - Purchase history and consumption-rate estimates the app derives from it
+- **Prices, receipt totals, tax amounts, and any monthly / weekly / per-category budget caps** you choose to track, plus your selected currency code
 - Events you create (parties, trips) and any guest counts you enter
-- Household composition you set during onboarding (number of adults, number of children — counts only, no names or identities)
+- Household composition you set during onboarding (number of adults, number of children — counts only, no names or identities) and the optional household name
 - Notification preferences and shopping-frequency settings
 - Recommendation feedback (whether you accepted or dismissed a suggestion)
+- **Free-text fields you enter** — item names, item notes, custom item names, list names, event titles and notes, and the optional store label you can attach to a shopping trip
+- A handful of local app preferences (e.g., whether you've reviewed the notification permission prompt, the expiry timestamp of a rewarded-ad Insights unlock, your starter-item picks during onboarding)
 
 The app currently has no account system and no cross-device sync. If you uninstall the app or tap **Delete All Data**, this information is gone.
 
@@ -27,23 +30,28 @@ The app currently has no account system and no cross-device sync. If you uninsta
 
 ### Google Firebase — Analytics, Crashlytics, Performance Monitoring
 
-Used to measure activation, retention, feature usage, crashes, and slow screens. The full list of events the app emits is published in the [analytics events doc](https://github.com/amoghsa/Stockwise/blob/main/docs/analytics-events.md) in the source repository. Examples: `app_opened`, `screen_viewed`, `item_added`, `suggestion_accepted`, `shopping_session_completed`, `purchase_completed`.
+Used (when you opt in) to measure activation, retention, feature usage, crashes, and slow screens. The full list of events the app emits is published in the [analytics events doc](https://github.com/amoghsa/Stockwise/blob/main/docs/analytics-events.md) in the source repository. Examples: onboarding completion, screen views, suggestion-acceptance and dismissal counts, stock-state changes, shopping-session start/save/complete, ad impressions and clicks, paywall views, rewarded-ad views, purchase success/failure, analytics-consent changes, and data-deletion requests.
 
-Along with each event, Firebase receives the standard SDK context: a Firebase-generated install ID (an opaque random identifier, not your name or email), device model, OS version, app version, language, country (derived from IP — the IP itself is not retained by Firebase Analytics for advertising), and a coarse session timestamp. We attach a small set of **user properties**: `is_premium`, `household_size` (a bucket, e.g. "3"), `account_type` ("guest"), `app_theme`, and `analytics_consent`.
+Along with each event, Firebase receives the standard SDK context: a Firebase-generated install ID (an opaque random identifier, not your name or email), device model, OS version, app version, language, country (derived from IP — the IP itself is not retained by Firebase Analytics for advertising), and a coarse session timestamp. We attach a small set of anonymous **user properties**: `is_premium`, `household_size` (a small bucket, e.g. "3"), `account_type` (currently always `"guest"` — there are no accounts today), `app_theme`, and `analytics_consent`.
 
-We do **not** send: your item names, list contents, pantry contents, event names, the contents of any free-text field, your precise location, or device advertising identifiers via Analytics.
+We do **not** send: your item names, list contents, pantry contents, event titles, the contents of any free-text field, your precise location, or your device advertising identifier via Analytics. Where an analytics event references a category, it sends the fixed taxonomy value (e.g., "Produce", "Dairy", "Vacation/Away") — never the user-entered name. The one exception is `purchase_failed`, which includes a localized StoreKit error reason supplied by the operating system (not user content).
 
-Crashlytics may include a stack trace, the device state at the moment of the crash, and a Crashlytics-generated installation UUID. Performance Monitoring reports timing for app startup, screen rendering, and network calls.
+Crashlytics may include a stack trace, the device state at the moment of the crash, and a Crashlytics-generated installation UUID. To make crashes interpretable, Crashlytics also receives the same anonymous user properties listed above (premium status, household-size bucket, theme, consent flag) as custom keys on each crash report. Performance Monitoring reports timing for app startup, screen rendering, and network calls.
 
-You can turn all of the above off with **Settings → Data & Privacy → Help Improve StockWise**. When the toggle is off, Analytics collection is disabled (`setAnalyticsCollectionEnabled(false)`); existing locally-buffered events that have not yet been uploaded are dropped.
+You can turn all of the above off with **Settings → Data & Privacy → Help Improve StockWise**. When the toggle is off, Analytics collection is disabled (`setAnalyticsCollectionEnabled(false)`), Firebase's ad-storage / ad-user-data / ad-personalization consent flags are all set to `denied`, and existing locally-buffered events that have not yet been uploaded are dropped. **Turning this toggle off also fully suppresses AdMob** — no ads will be requested or shown while consent is off, even on the free tier.
 
 Firebase's own privacy documentation: https://firebase.google.com/support/privacy
 
-### Google AdMob — advertising (free-tier users only)
+### Google AdMob — advertising (free-tier users who have opted in to analytics)
 
-Free-tier users see occasional native ads on Home and Pantry, and may opt into rewarded video ads in exchange for unlocking premium-style insights for 24 hours. Ads are served by Google AdMob.
+Free-tier users who have turned on **Help Improve StockWise** see occasional native ads on Home and Pantry, and can opt into a rewarded video ad to unlock the Insights screen for 24 hours. Ads are served by Google AdMob. (If the analytics toggle is off, no ads load at all.)
 
-To request and serve an ad, the AdMob SDK collects information described in Google's mobile ads SDK disclosure, which can include device identifiers (IDFA on iOS only when you grant App Tracking Transparency permission; the Android Advertising ID on Android), device type, OS, coarse network info, and the ad unit being filled. On iOS, if you decline tracking in the system ATT prompt, ads are served in a non-personalized mode.
+Before AdMob requests an ad, the app shows an in-app explainer and then the iOS App Tracking Transparency (ATT) system prompt — both presented contextually the first time an ad surface appears, not at launch. Your answer to the ATT prompt determines whether AdMob receives your device's advertising identifier:
+
+- **If you allow tracking:** AdMob may receive your iOS IDFA (or Android Advertising ID) for ad measurement and personalization.
+- **If you decline tracking:** ads are served in non-personalized mode and the IDFA is not provided.
+
+In addition to the IDFA (when granted), the AdMob SDK collects information described in Google's mobile-ads SDK disclosure, which can include coarse (city / region-level) location derived from your IP address, device type, OS, network info, and the ad unit being filled. StockWise does not request or use device GPS for ads or for any other purpose.
 
 We do not pass any of your shopping data to AdMob. We send AdMob the ad unit identifier and the SDK's standard request payload — nothing else.
 
@@ -53,7 +61,17 @@ If you'd rather not see ads at all, the **Remove Ads** one-time in-app purchase 
 
 ### Apple App Store / Google Play — purchases
 
-The **Remove Ads** purchase is processed by Apple StoreKit on iOS and Google Play Billing on Android. We never see your card number; we receive only a confirmation that the purchase succeeded and a product identifier (e.g. `remove_ads_lifetime`), which we store on device to suppress ads. Apple and Google's own privacy policies cover the payment leg.
+The **Remove Ads** purchase (a single non-consumable, the only IAP the app sells today) is processed by Apple StoreKit on iOS and Google Play Billing on Android. We never see your card number; we receive only a confirmation that the purchase succeeded and a product identifier (e.g. `com.amoghagrawal.stockwise.removeads`), which we store on device to suppress ads. Apple and Google's own privacy policies cover the payment leg.
+
+## Notifications
+
+StockWise sends reminders for: a weekly "time to plan your shop" prompt, low-stock follow-ups the day after you mark items out, event-prep reminders the day before an event you've added, and a one-shot travel-reduction notice when a vacation event begins.
+
+**All reminders are scheduled locally on your device.** StockWise does not run a push-notification server, has no remote message channel, and never sends notification content (event titles, item names, etc.) off the device. Before the iOS system permission dialog appears, the app shows an in-app explainer so you know what the reminders are for; you can decline either prompt and use the app without notifications.
+
+## Exporting your data
+
+Settings → Data & Privacy → **Export My Data** builds a JSON file containing a snapshot of every model the app stores (items, lists, pantry, events, purchase history, prices, budgets, household name, store labels, notes). The file is handed to the iOS share sheet so you control where it goes — Files, Mail, AirDrop, iMessage, etc. StockWise itself does not upload the export anywhere. There is no companion import flow at this time, so the export is best thought of as a personal backup format for your own use.
 
 ## What the app does **not** collect
 

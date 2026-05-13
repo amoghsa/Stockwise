@@ -1,13 +1,13 @@
 # StockWise Privacy Policy
 
 **Effective date:** 2026-05-08
-**Last updated:** 2026-05-09
+**Last updated:** 2026-05-13
 
 StockWise ("we", "us", "the app") is an offline-first grocery and pantry planning app for iOS and Android. This policy explains what data the app handles, where it lives, and the choices you have. We've tried to keep it short and free of legalese — if anything is unclear, open an issue at https://github.com/amoghsa/Stockwise/issues.
 
 ## Summary, in one paragraph
 
-Your shopping data — items, lists, pantry stock, events, purchase history, prices and budgets, household size — stays on your device. We do not run a backend that stores it, and we do not sync it to the cloud. The app uses Google Firebase (Analytics, Crashlytics, Performance Monitoring) to understand how the app is used and to find crashes, and Google AdMob to show ads in the free tier. **Analytics is off by default** — nothing is sent to Firebase until you flip the toggle in Settings → Data & Privacy → Help Improve StockWise. While that toggle is off, AdMob ads are also fully suppressed, so the free tier behaves like a fully offline build until you opt in. You can wipe everything the app stored, on device and in analytics, with **Delete All Data** in Settings.
+Your shopping data — items, lists, pantry stock, events, purchase history, prices and budgets, household size — stays on your device. We do not run a backend that stores it, and we do not sync it to the cloud. The app uses Google Firebase (Analytics, Crashlytics, Performance Monitoring) to understand how the app is used and to find crashes, and Google AdMob to show ads in the free tier. **Analytics is off by default** — nothing is sent to Firebase until you flip the toggle in Settings → Data & Privacy → Help Improve StockWise. While that toggle is off, AdMob ads are also fully suppressed, so the free tier behaves like a fully offline build until you opt in. The app has an optional **voice quick-add** feature; if you use it, audio is processed by your device's speech-recognition service (on-device when supported by the OS) and only the resulting text reaches the app. You can clear pantry tracking with **Reset Pantry Activity** in Settings, or uninstall the app to remove every locally stored record.
 
 ## What stays only on your device
 
@@ -24,7 +24,7 @@ The following is stored locally (Apple SwiftData on iOS, Room on Android) and ne
 - **Free-text fields you enter** — item names, item notes, custom item names, list names, event titles and notes, and the optional store label you can attach to a shopping trip
 - A handful of local app preferences (e.g., whether you've reviewed the notification permission prompt, the expiry timestamp of a rewarded-ad Insights unlock, your starter-item picks during onboarding)
 
-The app currently has no account system and no cross-device sync. If you uninstall the app or tap **Delete All Data**, this information is gone.
+The app currently has no account system and no cross-device sync. To clear pantry activity (stock states, purchase history, recommendation feedback, shopping sessions) while keeping your catalog, household profile, stores, and budgets, use **Settings → Reset Pantry Activity**. To remove every locally stored record, uninstall the app.
 
 ## What is sent off the device, and to whom
 
@@ -63,6 +63,19 @@ If you'd rather not see ads at all, the **Remove Ads** one-time in-app purchase 
 
 The **Remove Ads** purchase (a single non-consumable, the only IAP the app sells today) is processed by Apple StoreKit on iOS and Google Play Billing on Android. We never see your card number; we receive only a confirmation that the purchase succeeded and a product identifier (e.g. `com.amoghagrawal.stockwise.removeads`), which we store on device to suppress ads. Apple and Google's own privacy policies cover the payment leg.
 
+## Voice quick-add (microphone)
+
+The Home tab includes an optional **voice quick-add** button (small mic icon next to the text input). The first time you tap it, the operating system asks you to grant microphone permission; if you decline, the feature is disabled and the rest of the app works normally.
+
+When you use it, StockWise calls the Android `SpeechRecognizer` API:
+
+- On Android 12 (API 31) and newer, the app first checks whether **on-device speech recognition** is available (`SpeechRecognizer.createOnDeviceSpeechRecognizer`). When it is, audio is transcribed locally on your device and never leaves it.
+- When on-device recognition is unavailable, the app falls back to the standard `SpeechRecognizer` flow with `EXTRA_PREFER_OFFLINE = true`. On devices configured to use Google's speech service, audio may be sent to Google Speech Services for transcription per Google's terms; on other devices it is handled by whichever speech-recognition app the OS routes to. Refer to Google's privacy policy at https://policies.google.com/privacy for details on Google Speech Services.
+
+StockWise itself never writes the audio stream to disk, never uploads it to a backend we operate, and never shares it with third parties beyond the OS speech-recognition service described above. Only the **transcribed text string** is returned to the app, where it is parsed to extract an item name and quantity and then handled like any other entry on the quick-add bar.
+
+The microphone is engaged **only while you hold or tap the voice button on Home**. Closing the dialog, navigating away, or denying the runtime permission all release the microphone immediately.
+
 ## Notifications
 
 StockWise sends reminders for: a weekly "time to plan your shop" prompt, low-stock follow-ups the day after you mark items out, event-prep reminders the day before an event you've added, and a one-shot travel-reduction notice when a vacation event begins.
@@ -78,7 +91,7 @@ Settings → Data & Privacy → **Export My Data** builds a JSON file containing
 To be explicit, because some of these are common in similar apps:
 
 - **No precise location.** The app does not request foreground or background location permission, does not track your in-store movement, and does not build maps from your phone. (The product spec includes a forward-looking idea around aisle-based routing — that feature is not implemented today, and if it ever ships it will be opt-in and described in an updated version of this policy before launch.)
-- **No contacts, photos, microphone, calendar, or health data.**
+- **No contacts, photos, calendar, or health data.** Microphone access is requested only for the optional voice quick-add feature described above, and only while that feature is actively in use.
 - **No barcode or receipt scanning** in the current release.
 - **No account, no email, no password, no name.** The app runs as a local "Guest" profile.
 - **No third-party analytics besides Firebase.** No Facebook SDK, no Mixpanel, no Segment.
@@ -91,8 +104,8 @@ StockWise is a household utility intended for adults. The "children" count in ho
 
 - **Turn off analytics:** Settings → Data & Privacy → Help Improve StockWise.
 - **Reset advertising identifier:** iOS Settings → Privacy & Security → Tracking; or Android Settings → Privacy → Ads.
-- **Delete everything:** Settings → Data & Privacy → Delete All Data. This wipes all local databases and calls the analytics SDK's reset, which clears the Firebase install ID and user properties going forward.
-- **Uninstall the app:** removes the local database entirely. Any analytics already received by Firebase before uninstall is retained per Firebase's own retention policy unless you separately request deletion (see below).
+- **Reset pantry activity:** Settings → Reset Pantry Activity. Clears stock states, purchase history, recommendation feedback, shopping sessions, and active grocery lists while preserving your catalog, household profile, stores, and budgets. This also calls the analytics SDK's reset so the Firebase install ID and user properties are regenerated going forward.
+- **Remove everything:** uninstall the app. This deletes the local database in its entirety. Any analytics already received by Firebase before uninstall is retained per Firebase's own retention policy unless you separately request deletion (see below).
 - **Right of access / deletion (GDPR, UK GDPR, CCPA / CPRA, and similar regimes):** because we don't run a backend, the data we can access about you is essentially the Firebase install-ID-keyed analytics and crash records. To request deletion of those, email the address below with the approximate dates of use and the device platform; we will forward the deletion request to Firebase and confirm when complete.
 - **"Do Not Sell or Share" (CCPA):** we do not sell personal information and do not share it for cross-context behavioral advertising. AdMob's ad serving is configured to run in non-personalized mode where required by user signals (ATT denied on iOS, GPC on web equivalents, applicable region defaults).
 
